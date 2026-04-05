@@ -243,16 +243,32 @@ int main(int argc, char *argv[]) {
 
     mcast_t *m = multicast_init(MCAST_ADDR, PORT, PORT);
 
-    uint32_t file_id = 1;
-    for (int i = optind; i < argc; i++) {
-        send_file(m, argv[i], file_id++, chunk_size);
-    }
+    printf("Sender start");
+    int cnt = 0;
+    while(1){
+        //Broadcast number of files being transmitted
+        uint32_t num_files = (uint32_t)(argc - optind);
+        msg_header session_info;
+        memset(&session_info, 0, sizeof(session_info));
+        session_info.msg_type = MSG_TYPE_Info;
+        session_info.file_id = num_files;
+        multicast_send(m, &session_info, sizeof(session_info));
+        usleep(100000); 
+
+        cnt ++;
+        uint32_t file_id = 1;
+        for (int i = optind; i < argc; i++) {
+            send_file(m, argv[i], file_id++, chunk_size);
+        }
     
-    printf("\n--- Transmission Statistics ---\n");
-    printf("Total chunks sent: %lld\n", total_chunks_sent);
-    printf("Total bytes sent: %lld\n", total_bytes_sent);
-    printf("Total NACKs received: %lld\n", total_nacks_received);
-    printf("Total retransmissions: %lld\n", total_retransmissions);
+        printf("\n--- Transmission Statistics for Loop %d ---\n", cnt);
+        printf("Total chunks sent: %lld\n", total_chunks_sent);
+        printf("Total bytes sent: %lld\n", total_bytes_sent);
+        printf("Total NACKs received: %lld\n", total_nacks_received);
+        printf("Total retransmissions: %lld\n", total_retransmissions);
+
+        usleep(100000);    
+    }
 
     multicast_destroy(m);
     return 0;

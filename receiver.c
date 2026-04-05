@@ -24,6 +24,10 @@ int main()
     uint32_t highest_seen = 0;
     bool done = false;
 
+    int num_files_received = 0;
+    int num_files_expected = 3;
+    bool receivedFiles[MAX_CHUNKS] = {0};
+
     // Allocate buffer large enough for configurable payload chunks
     char *recv_buf = malloc(sizeof(msg_header) + MAX_PAYLOAD);
     if (!recv_buf) {
@@ -42,6 +46,13 @@ int main()
 
             msg_header *hdr = (msg_header *)recv_buf;
 
+            if(hdr->msg_type == MSG_TYPE_Info) {
+                num_files_expected = hdr->file_id;
+                printf("Session info received: expecting %u files\n", num_files_expected);
+                continue;
+            }
+
+
             if (hdr->msg_type != MSG_TYPE_DATA)
                 continue;
 
@@ -53,12 +64,12 @@ int main()
                 continue;
             }
 
-            if (fid < current_file_id) {
+            if (receivedFiles[hdr->file_id]){ //fid < current_file_id) {
                 // Packet from an older completed file, ignore it.
                 continue;
             }
 
-            if (fid > current_file_id) {
+            if (fid != current_file_id && !receivedFiles[fid]){//fid > current_file_id) {
                 if (fp) {
                     if (!done) {
                         printf("Warning: File ID %u incomplete, moving to File ID %u\n", current_file_id, fid);
@@ -149,6 +160,12 @@ int main()
                 // but we safely seal our generated disk file per transaction out.
                 fclose(fp);
                 fp = NULL;
+
+                receivedFiles[current_file_id] = true;
+                num_files_received++;
+                if (num_files_received >= num_files_expected) {
+                    printf("All expected files received.\n");
+                }
             }
         }
     }

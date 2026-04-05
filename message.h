@@ -5,6 +5,7 @@
 
 #define MSG_TYPE_DATA 1
 #define MSG_TYPE_NACK 2
+#define MSG_TYPE_Info 3
 
 typedef struct {
     uint32_t msg_type;    // MSG_TYPE_DATA or MSG_TYPE_ACK
